@@ -1,9 +1,11 @@
+// Bibliotecas
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
+// Encabezados
 #include "menu.h"
 #include "leerDirectorioInput.h"
 #include "frecuenciaCaracteres.h"
@@ -12,24 +14,20 @@
 #include "comprimir.h"
 #include "descomprimir.h"
 
-
-
-
 int main() {
-
-    int opcion_principal;
-    int opcion_accion;
+    int opcionMenuPrincipal;
+    int opcionMenuSecundario;
 
     do {
-        opcion_principal = MostrarMenuPrincipal();
+        opcionMenuPrincipal = MenuPrincipal();
 
-        if (opcion_principal == 4) {
+        if (opcionMenuPrincipal == 4) {
             printf("Saliendo del programa...\n");
             break;
         }
 
         // Imprimimos qué tipo seleccionó
-        switch (opcion_principal) {
+        switch (opcionMenuPrincipal) {
             case 1:
                 printf("Selecciono: Codificacion de Huffman serial\n");
                 break;
@@ -42,15 +40,15 @@ int main() {
         }
 
         do {
-            opcion_accion = MostrarMenuAcciones(opcion_principal);
+            opcionMenuSecundario = MenuSecundario(opcionMenuPrincipal);
 
-            if (opcion_accion == 3) {
+            if (opcionMenuSecundario == 3) {
                 printf("Volviendo al menu principal...\n");
                 break;
             }
 
-            if (opcion_accion == 1) {
-                switch (opcion_principal) {
+            if (opcionMenuSecundario == 1) {
+                switch (opcionMenuPrincipal) {
                     case 1:
                         //printf("Comprimir (serial): aqui llamarías a tu funcion de compresion serial\n");
                         int num_archivos = 0;
@@ -116,8 +114,8 @@ int main() {
                         printf("Comprimir (concurrente/pthread): aqui llamarías a tu funcion de compresion usando pthread\n");
                         break;
                 }
-            } else if (opcion_accion == 2) {
-                switch (opcion_principal) {
+            } else if (opcionMenuSecundario == 2) {
+                switch (opcionMenuPrincipal) {
                     case 1:
                         printf("Descomprimir (serial): aqui llamarías a tu funcion de descompresion serial\n");
                         break;
@@ -130,9 +128,9 @@ int main() {
                 }
             }
 
-        } while (opcion_accion != 3);
+        } while (opcionMenuSecundario != 3);
 
-    } while (opcion_principal != 4);
+    } while (opcionMenuPrincipal != 4);
 
 
 /*

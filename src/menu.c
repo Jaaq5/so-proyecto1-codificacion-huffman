@@ -1,12 +1,23 @@
-#include <stdio.h>
-#include <stdlib.h>
+// Bibliotecas
+#include <stdio.h>   // Para printf(), scanf()
+#include <stdlib.h>  // Para system()
+
+// Encabezados
 #include "menu.h"
 
-int MostrarMenuPrincipal() {
+/*
+ * Muestra el menú principal al usuario, solicita una opción válida (1-4) y la devuelve.
+ * Entradas: ninguna.
+ * Salidas: int opcion (valor entre 1 y 4 que representa la elección del usuario).
+ * Ejemplo: opcionMenuPrincipal = MenuPrincipal();
+ */
+int MenuPrincipal() {
     int opcion = 0;
+
+    // Limpia la pantalla de la consola
+    system("clear");
+
     do {
-        // Limpia la pantalla
-        system("clear");
 
         printf("\nBienvenido al programa de codificacion de Huffman\n");
         printf("1. Codificacion de Huffman serial\n");
@@ -15,30 +26,41 @@ int MostrarMenuPrincipal() {
         printf("4. Salir\n");
         printf("Seleccione una opcion (1-4): ");
 
+        // Lee la entrada del usuario
         if (scanf("%d", &opcion) != 1) {
-            while (getchar() != '\n'); // limpia buffer
+            // Si la entrada no es numérica, limpia el buffer
+            while (getchar() != '\n');
+            // Reinicia opción
             opcion = 0;
         }
 
+        // Verifica si la opción está fuera del rango válido
         if (opcion < 1 || opcion > 4) {
             printf("Entrada invalida, intente de nuevo (1-4).\n");
         }
 
+    // Repite mientras la opción no sea válida
     } while (opcion < 1 || opcion > 4);
 
     return opcion;
 }
 
-int MostrarMenuAcciones(int version) {
+
+/*
+ * Muestra el menú secundario de acciones, solicita una opción válida (1-3) y la devuelve.
+ * Entradas: int opcionPrincipal (tipo de version: 1=serial, 2=paralela/fork, 3=concurrente/pthread).
+ * Salidas: int opcion (valor entre 1 y 3 que representa la acción (comprimir/descomprimir) elegida).
+ * Ejemplo: opcionMenuSecundario = MenuSecundario(1);
+ */
+int MenuSecundario(int opcionPrincipal) {
     int opcion = 0;
     const char* versionAlgoritmo;
 
-    // Definimos nombre para mostrar ejemplos más claros
-    switch (version) {
+    // Asigna el nombre de la versión del algoritmo según la opción principal
+    switch (opcionPrincipal) {
         case 1: versionAlgoritmo = "serial"; break;
         case 2: versionAlgoritmo = "paralela (fork)"; break;
         case 3: versionAlgoritmo = "concurrente (pthread)"; break;
-        default: versionAlgoritmo = "desconocido"; break;
     }
 
     do {
@@ -47,15 +69,19 @@ int MostrarMenuAcciones(int version) {
         printf("3. Atras\n");
         printf("Seleccione una opcion (1-3): ");
 
+        // Lee la entrada del usuario
         if (scanf("%d", &opcion) != 1) {
+            // Si la entrada no es numérica, limpia el buffer
             while (getchar() != '\n');
             opcion = 0;
         }
 
+        // Verifica si la opción está fuera del rango válido
         if (opcion < 1 || opcion > 3) {
             printf("Entrada invalida, intente de nuevo (1-3).\n");
         }
 
+    // Repite mientras la opción no sea válida
     } while (opcion < 1 || opcion > 3);
 
     return opcion;

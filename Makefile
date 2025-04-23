@@ -22,7 +22,7 @@ SRC = \
 # Archivos objeto
 OBJ = \
     build/main.o \
-    src/menu.o \
+    build/menu.o \
     build/leerDirectorioInput.o \
     build/frecuenciaCaracteres.o \
     build/arbolHuffman.o \
