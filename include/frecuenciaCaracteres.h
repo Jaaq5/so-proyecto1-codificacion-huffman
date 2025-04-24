@@ -2,14 +2,21 @@
 #define FRECUENCIA_CARACTERES_H
 
 #include <stddef.h>
+#include <stdint.h>
 
-// Estructura para almacenar un carácter y su frecuencia
 typedef struct {
-    char caracter;
+    uint32_t caracter;       // Código Unicode
     unsigned int frecuencia;
 } FrecuenciaCaracter;
 
-void ContarFrecuencias(const char* texto, size_t tamaño, FrecuenciaCaracter* tablaFrecuencias, size_t* numCaracteres);
+void ContarFrecuencias(const char* texto,
+                       FrecuenciaCaracter** tablaFrecuencias,
+                       size_t* numCaracteres, size_t* capacidadTabla);
+
+uint32_t DecodificarUTF8(const char** texto);
+
+int CodificarUTF8(uint32_t unicode, char* salida);
+
 void ImprimirFrecuencias(FrecuenciaCaracter* tablaFrecuencias, size_t numCaracteres);
 
 #endif

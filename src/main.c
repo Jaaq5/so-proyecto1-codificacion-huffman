@@ -11,6 +11,7 @@
 #include "frecuenciaCaracteres.h"
 #include "arbolHuffman.h"
 #include "generarCodigos.h"
+#include "guardarTextoArchivosCodificado.h"
 #include "comprimir.h"
 #include "descomprimir.h"
 
@@ -51,48 +52,56 @@ int main() {
                 switch (opcionMenuPrincipal) {
                     case 1:
                         //printf("Comprimir (serial): aqui llamarías a tu funcion de compresion serial\n");
-                        int num_archivos = 0;
-                        char directorio_usuario[256];
-                        char path[300];
+                        int numArchivosLeidos = 0;
+                        char directorioArchivos[256];
+                        char rutaDirectorio[300];
+
                         // Bucle hasta que el usuario ingrese un directorio válido
                         while (1) {
                             printf("Ingrese el nombre del directorio: ");
-                            scanf("%255s", directorio_usuario);
+                            scanf("%255s", directorioArchivos);
 
-                            snprintf(path, sizeof(path), "%s", directorio_usuario);
+                            snprintf(rutaDirectorio, sizeof(rutaDirectorio), "%s", directorioArchivos);
 
                             struct stat st;
-                            if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+                            if (stat(rutaDirectorio, &st) == 0 && S_ISDIR(st.st_mode)) {
                                 break; // El directorio existe y es válido
                             } else {
-                                printf("El directorio '%s' no existe. Intente nuevamente.\n", path);
+                                printf("El directorio '%s' no existe. Intente nuevamente.\n", rutaDirectorio);
+                                printf("Ingrese un directorio dentro de la carpeta del proyecto (librosGutenberg)\n");
                             }
                         }
 
-                        ArchivoTexto* archivos = LeerDirectorioInput(path, &num_archivos);
-                        printf("Se leyeron %d archivos:\n", num_archivos);
-                        for (int i = 0; i < num_archivos; ++i) {
+                        ArchivoTexto* archivos = LeerDirectorioInput(rutaDirectorio, &numArchivosLeidos);
+                        printf("Se leyeron %d archivos:\n", numArchivosLeidos);
+                        for (int i = 0; i < numArchivosLeidos; ++i) {
                             printf("Archivo: %s (tamaño: %zu bytes)\n", archivos[i].nombre_archivo, archivos[i].tamaño);
                         }
 
 
+
                         // Concatenar todo el contenido en un solo buffer
                         size_t tamaño_total = 0;
-                        char* todo_contenido = ConcatenarArchivos(archivos, num_archivos, &tamaño_total);
+                        char* todo_contenido = ConcatenarArchivos(archivos, numArchivosLeidos, &tamaño_total);
 
                         tamaño_total = strlen(todo_contenido);
                         printf("\nContenido total concatenado (%zu bytes).\n", tamaño_total);
 
+
                         // Inicializar la tabla de frecuencias
-                        FrecuenciaCaracter tablaFrecuencias[256];
+                        FrecuenciaCaracter* tablaFrecuencias = NULL;
+                        size_t capacidadTabla = 0;
                         size_t numCaracteres = 0;
 
+
                         // Contar las frecuencias de los caracteres
-                        ContarFrecuencias(todo_contenido, tamaño_total, tablaFrecuencias, &numCaracteres);
+                        ContarFrecuencias(todo_contenido, &tablaFrecuencias, &numCaracteres, &capacidadTabla);
 
                         // Imprimir las frecuencias
                         ImprimirFrecuencias(tablaFrecuencias, numCaracteres);
 
+
+                        // TODO Fallo con una tabla muy grande
                         // Construir el árbol de Huffman
                         NodoHuffman* arbol = ConstruirArbolHuffman(tablaFrecuencias, numCaracteres);
 
@@ -100,6 +109,19 @@ int main() {
                         printf("\nÁrbol de Huffman (Recorrido Preorden):\n");
                         ImprimirArbolHuffman(arbol, 0);  // Llamar con nivel 0 para imprimir
 
+                        char* textoArchivosCodificado = GenerarCodigo(arbol, todo_contenido);
+
+                        ImprimirTablaCodigos(arbol);
+
+                        ImprimirTextoArchivosCodificado(textoArchivosCodificado);
+
+                        const char* rutaArchivo = "output/serialCompressedFiles.bin";
+
+                        // Guardar el texto codificado en el archivo .bin
+                        guardarTextoArchivosCodificado(textoArchivosCodificado, rutaArchivo);
+
+                        free(tablaFrecuencias);
+                        free(textoArchivosCodificado);
                         // Liberar la memoria del árbol
                         LiberarArbol(arbol);
 
@@ -136,27 +158,27 @@ int main() {
 /*
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
-    int num_archivos = 0;
-    char directorio_usuario[256];
-    char path[300];
+    int numArchivosLeidos = 0;
+    char directorioArchivos[256];
+    char rutaDirectorio[300];
     // Bucle hasta que el usuario ingrese un directorio válido
     while (1) {
         printf("Ingrese el nombre del directorio: ");
-        scanf("%255s", directorio_usuario);
+        scanf("%255s", directorioArchivos);
 
-        snprintf(path, sizeof(path), "%s", directorio_usuario);
+        snprintf(rutaDirectorio, sizeof(rutaDirectorio), "%s", directorioArchivos);
 
         struct stat st;
-        if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+        if (stat(rutaDirectorio, &st) == 0 && S_ISDIR(st.st_mode)) {
             break; // El directorio existe y es válido
         } else {
-            printf("El directorio '%s' no existe. Intente nuevamente.\n", path);
+            printf("El directorio '%s' no existe. Intente nuevamente.\n", rutaDirectorio);
         }
     }
-    ArchivoTexto* archivos = LeerDirectorioInput(path, &num_archivos);
-    printf("Se leyeron %d archivos:\n", num_archivos);
+    ArchivoTexto* archivos = LeerDirectorioInput(rutaDirectorio, &numArchivosLeidos);
+    printf("Se leyeron %d archivos:\n", numArchivosLeidos);
 
-    for (int i = 0; i < num_archivos; ++i) {
+    for (int i = 0; i < numArchivosLeidos; ++i) {
         printf("Archivo: %s (tamaño: %zu bytes)\n", archivos[i].nombre_archivo, archivos[i].tamaño);
     }
 
@@ -164,7 +186,7 @@ int main() {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Concatenar todo el contenido en un solo buffer
     size_t tamaño_total = 0;
-    char* todo_contenido = ConcatenarArchivos(archivos, num_archivos, &tamaño_total);
+    char* todo_contenido = ConcatenarArchivos(archivos, numArchivosLeidos, &tamaño_total);
 
     // Contar frecuencias
     unsigned int frecuencias[256] = {0};
@@ -215,7 +237,7 @@ int main() {
     }
 
     // Comprimir contenido en el archivo de salida "output.bin"
-    ComprimirContenido(todo_contenido, codigos, archivos, num_archivos, arbol);
+    ComprimirContenido(todo_contenido, codigos, archivos, numArchivosLeidos, arbol);
 
     DescomprimirArchivo("output/compressed_output.bin");
 
@@ -233,7 +255,7 @@ int main() {
 
     // Liberar memoria
     free(todo_contenido);
-    LiberarArchivos(archivos, num_archivos);
+    LiberarArchivos(archivos, numArchivosLeidos);
 
 */
 

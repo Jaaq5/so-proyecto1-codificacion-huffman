@@ -16,6 +16,7 @@ SRC = \
     src/frecuenciaCaracteres.c \
     src/arbolHuffman.c \
     src/generarCodigos.c \
+    src/guardarTextoArchivosCodificado.c \
     src/comprimir.c \
     #src/descomprimir.c \
 
@@ -27,6 +28,7 @@ OBJ = \
     build/frecuenciaCaracteres.o \
     build/arbolHuffman.o \
     build/generarCodigos.o \
+    build/guardarTextoArchivosCodificado.o \
     build/comprimir.o \
     #build/descomprimir.o
 

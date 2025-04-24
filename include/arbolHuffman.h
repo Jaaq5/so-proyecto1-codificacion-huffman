@@ -1,6 +1,8 @@
 #ifndef ARBOL_HUFFMAN_H
 #define ARBOL_HUFFMAN_H
 
+#include "frecuenciaCaracteres.h"
+
 // Estructura del nodo de Huffman
 typedef struct NodoHuffman {
     unsigned char caracter;      // Carácter o valor que representa el nodo

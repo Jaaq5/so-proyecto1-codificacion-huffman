@@ -3,6 +3,9 @@
 
 #include "arbolHuffman.h"
 
-void GenerarCodigos(NodoHuffman* raiz, char** codigos);
+char* GenerarCodigo(NodoHuffman* raiz, const char* texto);
+void ImprimirTablaCodigos(NodoHuffman* raiz);
+void ImprimirTextoArchivosCodificado(const char* codigo);
 
 #endif
+
