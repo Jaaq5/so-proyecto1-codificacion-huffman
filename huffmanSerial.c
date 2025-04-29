@@ -1,27 +1,27 @@
-// huffmanerial.c
-// Implementación serial en C del algoritmo de Huffman para comprimir y descomprimir todos los archivos de texto en un directorio.
+// Implementación serial del algoritmo de Huffman para comprimir todos los archivos txt de un directorio
+// y descomprimirlos a partir de un archivo .bin
 // Uso:
-//   Para comprimir:   ./huffman -c <directorio_txt> <archivo_salida.huf>
-//   Para descomprimir: ./huffman -d <archivo_entrada.huf> <directorio_destino>
+//   Para comprimir:    ./huffmanSerial -c <directorio_txt> <archivo_salida.bin>
+//   Para descomprimir: ./huffmanSerial -d <archivo_entrada.huf> <directorio_destino>
 
-#define _POSIX_C_SOURCE 200809L
+#define _POSIX_C_SOURCE 200809L // Se define para habilitar funciones POSIX como strdup, getline.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <limits.h>
-#include <unistd.h>
-#include <errno.h>
+#include <stdio.h>      // Entrada/salida estándar (printf, fopen, fread, fwrite)
+#include <stdlib.h>     // Funciones utilitarias (malloc, free, exit, atoi)
+#include <stdint.h>     // Tipos de datos de ancho fijo (uint8_t, uint32_t)
+#include <string.h>     // Manipulación de cadenas (strcpy, strcmp, memset)
+#include <dirent.h>     // Manejo de directorios (opendir, readdir, closedir)
+#include <sys/stat.h>   // Manejo de información de archivos (struct stat, mkdir)
+#include <limits.h>     // Constantes de límites como PATH_MAX
+#include <unistd.h>     // Funciones POSIX básicas (access, unlink)
+#include <errno.h>      // Manejo de errores mediante códigos de error (errno)
 
-#include "arbolHuffman.h"
-#include "medirTiempo.h"
+#include "arbolHuffman.h"   // Definición y operaciones sobre árboles de Huffman (en realidad para evitar las declaracion repetidas)
+#include "medirTiempo.h"    // Utilidades para medición de tiempo de ejecución
 
-#define MAGIC "HUF\0"
+#define MAGIC "HUF\0"       // Identificador mágico para identificar archivos comprimidos usando este programa
 #ifndef PATH_MAX
-#define PATH_MAX 4096
+#define PATH_MAX 4096       // Define un tamaño máximo por defecto para rutas si no está definido
 #endif
 
 // ----------------------- Estructuras para Huffman -----------------------
@@ -80,7 +80,14 @@ Node* build_huffman_tree(uint64_t freq[256]);
 void generate_codes(Node *node, char *buffer, int depth);
 void free_tree(Node *node);
 
-// Lee todos los archivos regulares en un directorio (no recursivo)
+/*
+ * Lee todos los archivos regulares en un directorio no recursivo.
+ * Entradas:
+ *   - dirpath: ruta al directorio a escanear.
+ *   - out_files: puntero a un arreglo de FileInfo* donde se almacenará la información de los archivos encontrados.
+ * Salidas:
+ *   - Retorna el número de archivos encontrados y llenados en out_files.
+ */
 int scan_directory(const char *dirpath, FileInfo **out_files) {
     DIR *dir = opendir(dirpath);
     if (!dir) { perror("opendir"); exit(EXIT_FAILURE); }
@@ -106,7 +113,14 @@ int scan_directory(const char *dirpath, FileInfo **out_files) {
     return count;
 }
 
-// Montículo mínimo de nodos
+/*
+ * Crea un nuevo montículo mínimo con una capacidad inicial.
+ * Arboles grandes ocupan heap
+ * Entradas:
+ *   - cap: capacidad inicial del montículo.
+ * Salidas:
+ *   - Retorna un puntero al MinHeap creado.
+ */
 MinHeap* heap_create(int cap) {
     MinHeap *h = malloc(sizeof(MinHeap));
     h->data = malloc(sizeof(Node*) * cap);
@@ -115,8 +129,22 @@ MinHeap* heap_create(int cap) {
     return h;
 }
 
+/*
+ * Intercambia dos punteros de nodos.
+ * Entradas:
+ *   - a, b: punteros a punteros de nodos a intercambiar.
+ * Salidas: ninguna.
+ */
 void heap_swap(Node **a, Node **b) { Node *t = *a; *a = *b; *b = t; }
 
+
+/*
+ * Inserta un nodo en el montículo mínimo.
+ * Entradas:
+ *   - h: montículo mínimo donde insertar.
+ *   - n: nodo a insertar.
+ * Salidas: ninguna.
+ */
 void heap_push(MinHeap *h, Node *n) {
     if (h->size >= h->capacity) {
         h->capacity *= 2;
@@ -133,6 +161,13 @@ void heap_push(MinHeap *h, Node *n) {
     }
 }
 
+/*
+ * Extrae el nodo con menor frecuencia del montículo.
+ * Entradas:
+ *   - h: montículo mínimo.
+ * Salidas:
+ *   - Nodo con la menor frecuencia.
+ */
 Node* heap_pop(MinHeap *h) {
     if (h->size == 0) return NULL;
     Node *root = h->data[0];
@@ -154,6 +189,15 @@ Node* heap_pop(MinHeap *h) {
     return root;
 }
 
+/*
+ * Crea un nodo nuevo del árbol de Huffman.
+ * Entradas:
+ *   - freq: frecuencia del símbolo.
+ *   - symbol: símbolo representado (0-255 para hojas, -1 para internos).
+ *   - l, r: hijos izquierdo y derecho.
+ * Salidas:
+ *   - Retorna un puntero al nuevo nodo.
+ */
 Node* create_node(uint64_t freq, int symbol, Node *l, Node *r) {
     Node *n = malloc(sizeof(Node));
     n->freq = freq;
@@ -163,6 +207,13 @@ Node* create_node(uint64_t freq, int symbol, Node *l, Node *r) {
     return n;
 }
 
+/*
+ * Construye el árbol de Huffman a partir de una tabla de frecuencias.
+ * Entradas:
+ *   - freq: arreglo con las frecuencias de los símbolos (256 elementos).
+ * Salidas:
+ *   - Retorna la raíz del árbol de Huffman.
+ */
 Node* build_huffman_tree(uint64_t freq[256]) {
     MinHeap *h = heap_create(256);
     for (int i = 0; i < 256; i++) {
@@ -182,6 +233,15 @@ Node* build_huffman_tree(uint64_t freq[256]) {
     return root;
 }
 
+/*
+ * Genera los códigos Huffman recursivamente a partir del árbol.
+ * Entradas:
+ *   - node: nodo actual del árbol.
+ *   - buffer: cadena auxiliar donde se construye el código.
+ *   - depth: profundidad actual del recorrido.
+ * Salidas:
+ *   - Llena el arreglo global 'codes' con los códigos Huffman por símbolo.
+ */
 void generate_codes(Node *node, char *buffer, int depth) {
     if (!node) return;
     if (node->symbol != -1) {
@@ -197,6 +257,12 @@ void generate_codes(Node *node, char *buffer, int depth) {
     generate_codes(node->right, buffer, depth+1);
 }
 
+/*
+ * Libera recursivamente la memoria de los nodos del árbol de Huffman.
+ * Entradas:
+ *   - node: raíz del árbol a liberar.
+ * Salidas: ninguna.
+ */
 void free_tree(Node *node) {
     if (!node) return;
     free_tree(node->left);
@@ -204,14 +270,27 @@ void free_tree(Node *node) {
     free(node);
 }
 
-
-
+/*
+ * Inicializa una estructura BitWriter para escribir bits en un archivo.
+ * Entradas:
+ *   - w: puntero a BitWriter a inicializar.
+ *   - f: archivo de salida.
+ * Salidas: ninguna.
+ */
 void bw_init(BitWriter *w, FILE *f) {
     w->f = f;
     w->buf = 0;
     w->bit_pos = 0;
 }
 
+
+/*
+ * Escribe un bit (0 o 1) en el archivo asociado al BitWriter.
+ * Entradas:
+ *   - w: puntero a BitWriter.
+ *   - bit: valor del bit a escribir.
+ * Salidas: ninguna.
+ */
 void bw_write_bit(BitWriter *w, int bit) {
     w->buf |= (bit & 1) << (7 - w->bit_pos);
     w->bit_pos++;
@@ -222,6 +301,12 @@ void bw_write_bit(BitWriter *w, int bit) {
     }
 }
 
+/*
+ * Vacía cualquier bit restante en el buffer del BitWriter al archivo.
+ * Entradas:
+ *   - w: puntero a BitWriter.
+ * Salidas: ninguna.
+ */
 void bw_flush(BitWriter *w) {
     if (w->bit_pos > 0) {
         fwrite(&w->buf, 1, 1, w->f);
@@ -230,7 +315,14 @@ void bw_flush(BitWriter *w) {
     }
 }
 
-
+/*
+ * Inicializa una estructura BitReader para leer bits desde un buffer.
+ * Entradas:
+ *   - r: puntero a BitReader.
+ *   - data: puntero al buffer de datos.
+ *   - size: tamaño del buffer en bytes.
+ * Salidas: ninguna.
+ */
 void br_init(BitReader *r, uint8_t *data, size_t size) {
     r->data = data;
     r->size = size;
@@ -238,6 +330,13 @@ void br_init(BitReader *r, uint8_t *data, size_t size) {
     r->bit_pos = 0;
 }
 
+/*
+ * Lee un solo bit desde el buffer del BitReader.
+ * Entradas:
+ *   - r: puntero a BitReader.
+ * Salidas:
+ *   - Retorna el bit leído (0 o 1), o -1 si se alcanza el final del buffer.
+ */
 int br_read_bit(BitReader *r) {
     if (r->idx >= r->size) return -1;
     int bit = (r->data[r->idx] >> (7 - r->bit_pos)) & 1;
@@ -249,8 +348,13 @@ int br_read_bit(BitReader *r) {
     return bit;
 }
 
-// FUNCIONES PRINCIPALES: compresión y descompresión
-
+/*
+ * Comprime todos los archivos de texto en un directorio y los guarda en un archivo binario.
+ * Entradas:
+ *   - dirpath: ruta al directorio con archivos de texto.
+ *   - outpath: ruta al archivo de salida comprimido (.bin).
+ * Salidas: ninguna (crea el archivo de salida y muestra información en consola).
+ */
 void compress_directory(const char *dirpath, const char *outpath) {
     FileInfo *files;
     int nfiles = scan_directory(dirpath, &files);
@@ -340,6 +444,13 @@ void compress_directory(const char *dirpath, const char *outpath) {
     printf("Compresión completada: %u archivos -> %s\n", m, outpath);
 }
 
+/*
+ * Descomprime un archivo .bin y restaura los archivos originales en un directorio.
+ * Entradas:
+ *   - inpath: ruta al archivo .bin de entrada.
+ *   - outdir: ruta al directorio destino donde guardar los archivos descomprimidos.
+ * Salidas: ninguna (recrea los archivos en disco y muestra información en consola).
+ */
 void decompress_archive(const char *inpath, const char *outdir) {
     FILE *in = fopen(inpath, "rb");
     if (!in) { perror(inpath); exit(EXIT_FAILURE); }
@@ -417,6 +528,14 @@ void decompress_archive(const char *inpath, const char *outdir) {
     printf("Descompresión completada en directorio: %s\n", outdir);
 }
 
+/*
+ * Ejecuta el programa Huffman en modo compresión o descompresión, según los argumentos recibidos.
+ * Entradas:
+ *   - argc: número de argumentos.
+ *   - argv: arreglo de argumentos de línea de comandos.
+ * Salidas: ninguna (ejecuta el flujo principal del programa).
+ */
+// Nota: esto antes era un main, por eso tiene argumentos de este tipo
 void EjecutarHuffmanSerial(int argc, char *argv[]) {
     if (argc != 4 || (strcmp(argv[1], "-c") && strcmp(argv[1], "-d"))) {
         fprintf(stderr, "Uso:\n  Para comprimir:   %s -c <dir_txt> <salida.huf>\n  Para descomprimir: %s -d <entrada.huf> <dir_destino>\n", argv[0], argv[0]);

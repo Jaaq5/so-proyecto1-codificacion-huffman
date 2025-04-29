@@ -1,17 +1,15 @@
 /*
- * huffmanPthread.c
- *
  * Implementación paralela (usando pthreads) del algoritmo de Huffman para comprimir y descomprimir
  * todos los archivos de un directorio. Uso desde línea de comandos:
  *
- *   Para comprimir:   ./huffmanParallel -c <directorio_txt> <archivo_salida.huf>
- *   Para descomprimir: ./huffmanParallel -d <archivo_entrada.huf> <directorio_destino>
+ *   Para comprimir:   ./huffmanPthread -c <directorio_txt> <archivo_salida.huf>
+ *   Para descomprimir: ./huffmanPthread -d <archivo_entrada.huf> <directorio_destino>
  *
  * Este ejemplo integra:
  *  - Dos fases en compresión: conteo de frecuencias en paralelo y compresión en paralelo.
  *  - Descompresión paralela (cada archivo se procesa en un hilo).
  *
- * Compilar con: gcc -pthread -o huffmanParallel huffmanParallel.c
+ * Compilar con: gcc -pthread -o huffmanPthread huffmanPthread.c
  */
 
 #define _POSIX_C_SOURCE 200809L
@@ -375,7 +373,7 @@ void* decompress_file_thread(void *arg) {
 /* ----------------------------------------
  *   FUNCIÓN PRINCIPAL DE COMPRESIÓN (PARALELO)
  * -----------------------------------------*/
-void compress_directory_parallel(const char *dirpath, const char *outpath) {
+void compress_directory_pthread(const char *dirpath, const char *outpath) {
     FileInfo *files = NULL;
     int nfiles = scan_directory_p(dirpath, &files);
     if (nfiles == 0) {
@@ -477,7 +475,7 @@ void compress_directory_parallel(const char *dirpath, const char *outpath) {
 /* ----------------------------------------
  *   FUNCIÓN PRINCIPAL DE DESCOMPRESIÓN (PARALELO)
  * -----------------------------------------*/
-void decompress_archive_parallel(const char *inpath, const char *outdir) {
+void decompress_archive_pthread(const char *inpath, const char *outdir) {
     FILE *in = fopen(inpath, "rb");
     if (!in) { perror(inpath); exit(EXIT_FAILURE); }
     char magic[4];
@@ -558,11 +556,11 @@ void EjecutarHuffmanPthread(int argc, char *argv[]) {
 
     if (strcmp(argv[1], "-c") == 0) {
         iniciarMedicionT();  // Inicia la medición del tiempo
-        compress_directory_parallel(argv[2], argv[3]);  // Llama a la función de compresión
+        compress_directory_pthread(argv[2], argv[3]);  // Llama a la función de compresión
         finalizarMedicionT();  // Finaliza la medición del tiempo
     } else {
         iniciarMedicionT();  // Inicia la medición del tiempo
-        decompress_archive_parallel(argv[2], argv[3]);  // Llama a la función de descompresión
+        decompress_archive_pthread(argv[2], argv[3]);  // Llama a la función de descompresión
         finalizarMedicionT();  // Finaliza la medición del tiempo
     }
 

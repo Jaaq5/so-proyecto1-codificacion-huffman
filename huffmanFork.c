@@ -1,9 +1,8 @@
 /*
- * huffmanFork.c
  *
  * Compresión y descompresión de archivos de texto usando el algoritmo de Huffman.
  *
- * La compresión se paraleliza con fork(): después de contar las frecuencias y
+ * La compresión se paraleliza con fork() después de contar las frecuencias y
  * generar el árbol global y los códigos, se forkea un proceso por cada archivo que
  * genera su sección comprimida en un archivo temporal. Luego el padre "une" los
  * resultados en el archivo final de salida.
@@ -79,10 +78,6 @@
  } BitReader;
 
  */
-
-
-
-
 
 
 //----------------- Prototipos -----------------

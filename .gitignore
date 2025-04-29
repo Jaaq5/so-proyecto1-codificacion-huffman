@@ -56,3 +56,6 @@ dkms.conf
 /output
 *.bin
 proyecto1
+/archivos_recuperados_s/*.txt
+/archivos_recuperados_f/*.txt
+/archivos_recuperados_p/*.txt
